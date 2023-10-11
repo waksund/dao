@@ -1,27 +1,27 @@
-﻿import { ethers } from "hardhat";
-import {BigNumber} from "ethers";
+import { ethers } from "hardhat";
 
 async function main() {
-    const [deployer] = await ethers.getSigners();
-    console.log(`Deploying contract with the account: ${deployer.address}`);
+  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
+  const unlockTime = currentTimestampInSeconds + 60;
 
-    const balance : BigNumber = await deployer.getBalance();
-    console.log(`Account balance: ${balance.toString()}`);
+  const lockedAmount = ethers.parseEther("0.001");
 
-    const chairPerson = "0x388CC371FFaCc75e9De3710A24cE6617b92Eb4e1";
-    const _voteToken = "0x065Ce3AB42d3B0a73459b1FF631B400E8048D745";
-    const _minimumQuorum = 10;
-    const _debatingPeriodDuration = 60000;
-    
-    const factory = await ethers.getContractFactory("Dao");
-    let contract = await factory.deploy(chairPerson, _voteToken, _minimumQuorum, _debatingPeriodDuration);
-    console.log(`contract address: ${contract.address}`);
-    console.log(`transaction Id: ${contract.deployTransaction.hash}`);
+  const lock = await ethers.deployContract("Lock", [unlockTime], {
+    value: lockedAmount,
+  });
+
+  await lock.waitForDeployment();
+
+  console.log(
+    `Lock with ${ethers.formatEther(
+      lockedAmount
+    )}ETH and unlock timestamp ${unlockTime} deployed to ${lock.target}`
+  );
 }
 
-main()
-    .then(() => process.exit(0))
-    .catch((error) =>{
-        console.error(error);
-        process.exit(1);
-    });
+// We recommend this pattern to be able to use async/await everywhere
+// and properly handle errors.
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
